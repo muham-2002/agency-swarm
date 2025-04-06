@@ -21,6 +21,7 @@ from agency_swarm.tools.oai.FileSearch import FileSearchConfig
 from agency_swarm.util.oai import get_openai_client
 from agency_swarm.util.openapi import validate_openapi_spec
 from agency_swarm.util.shared_state import SharedState
+from agency_swarm.util.settings_manager import SettingsManager
 
 
 class ExampleMessage(TypedDict):
@@ -783,32 +784,19 @@ class Agent:
         return True
 
     def _save_settings(self):
-        path = self.get_settings_path()
-        # check if settings.json exists
-        if not os.path.isfile(path):
-            with open(path, "w") as f:
-                json.dump([self.assistant.model_dump()], f, indent=4)
-        else:
-            settings = []
-            with open(path, "r") as f:
-                settings = json.load(f)
-                settings.append(self.assistant.model_dump())
-            with open(path, "w") as f:
-                json.dump(settings, f, indent=4)
+        settings_manager = SettingsManager()
+        settings_manager.save_settings(
+            self.get_settings_path(), 
+            [self.assistant.model_dump()]
+        )
 
     def _update_settings(self):
-        path = self.get_settings_path()
-        # check if settings.json exists
-        if os.path.isfile(path):
-            settings = []
-            with open(path, "r") as f:
-                settings = json.load(f)
-                for i, assistant_settings in enumerate(settings):
-                    if assistant_settings["id"] == self.id:
-                        settings[i] = self.assistant.model_dump()
-                        break
-            with open(path, "w") as f:
-                json.dump(settings, f, indent=4)
+        settings_manager = SettingsManager()
+        settings_manager.update_settings(
+            self.get_settings_path(),
+            self.id,
+            self.assistant.model_dump()
+        )
 
     # --- Helper Methods ---
 
@@ -939,15 +927,5 @@ class Agent:
         self._delete_settings()
 
     def _delete_settings(self):
-        path = self.get_settings_path()
-        # check if settings.json exists
-        if os.path.isfile(path):
-            settings = []
-            with open(path, "r") as f:
-                settings = json.load(f)
-                for i, assistant_settings in enumerate(settings):
-                    if assistant_settings["id"] == self.id:
-                        settings.pop(i)
-                        break
-            with open(path, "w") as f:
-                json.dump(settings, f, indent=4)
+        settings_manager = SettingsManager()
+        settings_manager.delete_settings(self.get_settings_path(), self.id)

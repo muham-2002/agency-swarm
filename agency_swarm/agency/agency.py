@@ -34,6 +34,7 @@ from agency_swarm.user import User
 from agency_swarm.util.errors import RefusalError
 from agency_swarm.util.files import get_file_purpose, get_tools
 from agency_swarm.util.shared_state import SharedState
+from agency_swarm.util.settings_manager import SettingsManager
 from agency_swarm.util.streaming import (
     AgencyEventHandler,
     create_gradio_handler,
@@ -675,6 +676,7 @@ class Agency:
                 f"Error setting up autocomplete for agents in terminal: {e}. Autocomplete will not work."
             )
 
+
     def run_demo(self):
         """
         Executes agency in the terminal with autocomplete for recipient agent names.
@@ -740,8 +742,8 @@ class Agency:
         """
         if self.settings_callbacks:
             loaded_settings = self.settings_callbacks["load"]()
-            with open(self.settings_path, "w") as f:
-                json.dump(loaded_settings, f, indent=4)
+            settings_manager = SettingsManager()
+            settings_manager.save_settings(self.settings_path, loaded_settings)
 
         for agent in self.agents:
             if "temp_id" in agent.id:
@@ -783,9 +785,8 @@ class Agency:
             agent.init_oai()
 
         if self.settings_callbacks:
-            with open(self.agents[0].get_settings_path(), "r") as f:
-                settings = f.read()
-            settings = json.loads(settings)
+            settings_manager = SettingsManager()
+            settings = settings_manager.load_settings(self.agents[0].get_settings_path())
             self.settings_callbacks["save"](settings)
 
     def _init_threads(self):
